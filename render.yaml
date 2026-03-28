@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: quiz-forge
+    env: go
+    buildCommand: go build -o quiz-forge cmd/server/main.go
+    startCommand: ./quiz-forge
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    autoDeploy: true
