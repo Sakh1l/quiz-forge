@@ -1,0 +1,77 @@
+{{if not .PlayerID}}
+<div class="text-center py-16">
+    <div class="text-5xl mb-4">🔒</div>
+    <h2 class="text-2xl font-bold mb-2">Not Joined</h2>
+    <p class="text-gray-400 mb-6">Use the join link to enter this room.</p>
+    <a href="/join/{{.Code}}" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-medium">Join Session</a>
+</div>
+{{else if eq (str .Session.Status) "waiting"}}
+<div class="text-center py-16">
+    <div class="text-6xl mb-4 animate-pulse">⏳</div>
+    <h2 class="text-3xl font-bold mb-4">Waiting for Host</h2>
+    <p class="text-gray-400">The quiz will start soon...</p>
+    <div class="mt-8 inline-block px-6 py-3 bg-gray-800 rounded-xl">
+        <span class="text-sm text-gray-500">Room:</span>
+        <span class="text-2xl font-bold ml-2 text-blue-400">{{.Code}}</span>
+    </div>
+</div>
+{{else if eq (str .Session.Status) "active"}}
+<div class="text-center">
+    {{if .Quiz}}
+    <div class="mb-8">
+        <span class="inline-block px-4 py-1 bg-blue-600/20 text-blue-400 rounded-full text-sm mb-4">
+            Question {{add .Session.CurrentIndex 1}} of {{len .Quiz.Questions}}
+        </span>
+        <div id="timer" class="text-6xl font-bold mb-6">--</div>
+    </div>
+
+    <div class="bg-gray-800 rounded-2xl p-8 border border-gray-700 mb-8">
+        <p class="text-2xl font-medium mb-8" id="play-question-text">
+            {{(index .Quiz.Questions .Session.CurrentIndex).Text}}
+        </p>
+
+        <form id="answerForm" hx-post="/play/{{.Code}}/answer" hx-swap="none">
+            <input type="hidden" name="start_time" id="startTime">
+            <div id="answer-buttons">
+                {{range $i, $ans := (index .Quiz.Questions .Session.CurrentIndex).Answers}}
+                <button type="submit" name="answer" value="{{$i}}"
+                        class="answer-btn w-full mb-4 p-4 bg-gray-700 hover:bg-gray-600 border border-gray-600 hover:border-blue-500 rounded-xl text-lg transition text-left">
+                    <span class="inline-block w-8 h-8 bg-gray-600 rounded-full text-center mr-4">{{$i | char}}</span>
+                    {{$ans}}
+                </button>
+                {{end}}
+            </div>
+        </form>
+    </div>
+
+    <div id="answer-status" class="text-gray-500 text-sm hidden">
+        Answer submitted! Waiting for results...
+    </div>
+    {{end}}
+</div>
+{{else if eq (str .Session.Status) "reveal"}}
+<div class="text-center py-8">
+    <div class="text-6xl mb-4">📊</div>
+    <h2 class="text-2xl font-bold mb-2">Answer Revealed!</h2>
+    <p class="text-gray-400">Waiting for host to continue...</p>
+</div>
+{{else if eq (str .Session.Status) "paused"}}
+<div class="text-center py-8">
+    <div class="text-5xl mb-4">⏸</div>
+    <h2 class="text-2xl font-bold mb-2">Round Paused</h2>
+    <p class="text-gray-400">Get ready for the next question!</p>
+</div>
+{{else if eq (str .Session.Status) "ended"}}
+<div class="text-center py-8">
+    <div class="text-6xl mb-4">🏆</div>
+    <h2 class="text-3xl font-bold mb-2">Quiz Completed!</h2>
+    <p class="text-gray-400 mb-8">Thanks for playing!</p>
+    <a href="/" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-medium">
+        ← Back to Home
+    </a>
+</div>
+{{else}}
+<div class="text-center py-8">
+    <p>Unknown status: {{str .Session.Status}}</p>
+</div>
+{{end}}

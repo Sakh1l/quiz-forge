@@ -1,0 +1,37 @@
+<div class="space-y-3" id="host-controls-inner">
+    {{if eq (str .Session.Status) "waiting"}}
+    <form action="/host/session/{{.Session.RoomCode}}/next" method="POST">
+        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-xl font-bold transition">
+            ▶ Start Quiz
+        </button>
+    </form>
+    {{else if eq (str .Session.Status) "active"}}
+    <form action="/host/session/{{.Session.RoomCode}}/reveal" method="POST">
+        <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-700 py-3 rounded-xl font-bold transition">
+            👁 Reveal Answer
+        </button>
+    </form>
+    <form action="/host/session/{{.Session.RoomCode}}/end-round" method="POST">
+        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold transition">
+            ⏹ End Round
+        </button>
+    </form>
+    {{else if eq (str .Session.Status) "reveal"}}
+    <form action="/host/session/{{.Session.RoomCode}}/next" method="POST">
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold transition">
+            ▶ Next Question
+        </button>
+    </form>
+    {{else if eq (str .Session.Status) "paused"}}
+    <form action="/host/session/{{.Session.RoomCode}}/next" method="POST">
+        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-xl font-bold transition">
+            ▶ Next Question
+        </button>
+    </form>
+    {{end}}
+    <form action="/host/session/{{.Session.RoomCode}}/end" method="POST">
+        <button type="submit" class="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded-xl font-medium transition">
+            End Session
+        </button>
+    </form>
+</div>

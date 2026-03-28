@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Quiz - Quiz Forge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-400 mb-2">Quiz Forge</h1>
+            <p class="text-gray-400">Join the quiz session</p>
+        </div>
+        <div class="bg-gray-800 rounded-2xl p-8 border border-gray-700">
+            <div class="text-center mb-6">
+                <p class="text-sm text-gray-400 mb-2">Room Code</p>
+                <p class="text-4xl font-bold tracking-widest text-blue-400">{{.Code}}</p>
+            </div>
+            <div class="flex justify-center mb-6">
+                <div id="qrcode" class="p-2 bg-white rounded-lg"></div>
+            </div>
+            <form action="/join/{{.Code}}" method="POST">
+                <div class="mb-4">
+                    <label class="block text-sm text-gray-400 mb-2">Enter Your Nickname</label>
+                    <input type="text" name="nickname" required class="w-full px-4 py-4 bg-gray-700 border border-gray-600 rounded-xl text-center text-xl focus:outline-none focus:border-blue-500" placeholder="Your name" maxlength="20">
+                </div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 py-4 rounded-xl font-bold text-lg transition">Join Game</button>
+            </form>
+            <div class="mt-4 text-center">
+                <button onclick="copyLink()" class="text-sm text-gray-400 hover:text-white transition">
+                    📋 Copy join link
+                </button>
+            </div>
+        </div>
+        {{if .Error}}
+        <div class="mt-4 bg-red-900/50 border border-red-700 rounded-xl p-4 text-center">
+            <p class="text-red-400">{{.Error}}</p>
+        </div>
+        {{end}}
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const qrContainer = document.getElementById('qrcode');
+            if (qrContainer && typeof QRCode !== 'undefined') {
+                const joinUrl = window.location.origin + '/join/{{.Code}}';
+                QRCode.toCanvas(joinUrl, { width: 120, margin: 1 }, function(error, canvas) {
+                    if (!error) {
+                        qrContainer.appendChild(canvas);
+                    }
+                });
+            }
+        });
+
+        function copyLink() {
+            const url = window.location.origin + '/join/{{.Code}}';
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Join link copied to clipboard!');
+            }).catch(function() {
+                prompt('Copy this link:', url);
+            });
+        }
+    </script>
+</body>
+</html>

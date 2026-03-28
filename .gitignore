@@ -1,0 +1,45 @@
+# Binaries
+/quiz-forge
+/quiz-forge-dev
+/quiz-forge-prod
+/server
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output
+*.out
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# Node (for e2e tests)
+e2e/node_modules/
+e2e/package-lock.json
+
+# Build artifacts
+dist/

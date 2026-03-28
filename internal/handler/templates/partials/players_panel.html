@@ -1,0 +1,11 @@
+<h3 class="font-bold text-lg mb-4">Players <span id="player-badge" class="text-sm text-gray-400">({{len .Session.Players}})</span></h3>
+<div id="player-list" class="space-y-2 max-h-64 overflow-y-auto">
+    {{range $id, $p := .Session.Players}}
+    <div class="flex justify-between items-center bg-gray-700 rounded-lg px-4 py-2">
+        <span>{{$p.Nickname}}</span>
+        <span class="text-blue-400 font-bold">{{$p.Score}} pts</span>
+    </div>
+    {{else}}
+    <p class="text-gray-500 text-center py-4">No players yet</p>
+    {{end}}
+</div>

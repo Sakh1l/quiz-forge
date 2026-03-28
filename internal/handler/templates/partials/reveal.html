@@ -1,0 +1,20 @@
+<div id="reveal-info" class="text-center">
+    {{if .Stats}}
+    <h3 class="text-xl font-bold mb-4">Answer Distribution</h3>
+    <div class="space-y-2 max-w-md mx-auto">
+        {{range $i, $count := .Stats}}
+        <div class="flex items-center gap-3">
+            <span class="w-8 h-8 flex items-center justify-center bg-gray-600 rounded-full text-sm">{{$i | char}}</span>
+            <div class="flex-1 bg-gray-700 rounded-full h-6 overflow-hidden">
+                <div class="bg-blue-500 h-full flex items-center justify-end pr-2 text-sm" style="width: {{if $.BarWidths}}{{index $.BarWidths $i}}%{{else}}{{if gt $count 0}}{{$count}}{{else}}0{{end}}%{{end}}">
+                    {{$count}}
+                </div>
+            </div>
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+    {{if ge .CorrectIndex 0}}
+    <p class="mt-4 text-green-400">Correct answer: <strong>{{.CorrectIndex | char}}</strong></p>
+    {{end}}
+</div>

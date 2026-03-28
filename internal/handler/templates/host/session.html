@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" data-room-code="{{.Session.RoomCode}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host Session - Quiz Forge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/htmx.min.js"></script>
+    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/app.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Notification container -->
+    <div id="notifications" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold mb-2">Room Code: <span class="text-blue-400 room-code">{{.Session.RoomCode}}</span></h1>
+                <p class="text-gray-400">Share this code with players</p>
+                <div id="qrcode" class="mt-4 inline-block p-4 bg-white rounded-xl"></div>
+                <p class="text-xs text-gray-500 mt-2">Scan to join</p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2">
+                    <div class="bg-gray-800 rounded-2xl p-8 border border-gray-700 min-h-[400px]">
+                        <div id="question-display">
+                            {{template "templates/partials/host_main.html" .}}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div id="players-panel" class="bg-gray-800 rounded-2xl p-6 border border-gray-700">
+                        {{template "templates/partials/players_panel.html" .}}
+                    </div>
+
+                    <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700">
+                        <h3 class="font-bold text-lg mb-4">Controls</h3>
+                        <div id="host-controls">
+                            {{template "templates/partials/host_controls.html" .}}
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700">
+                        <h3 class="font-bold text-lg mb-4">Leaderboard</h3>
+                        <div id="leaderboard">
+                            {{template "templates/partials/leaderboard.html" .}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate QR code
+        new QRCode(document.getElementById("qrcode"), {
+            text: window.location.origin + "/join/{{.Session.RoomCode}}",
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.L
+        });
+    </script>
+</body>
+</html>

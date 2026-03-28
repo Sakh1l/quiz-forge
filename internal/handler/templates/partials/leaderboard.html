@@ -1,0 +1,17 @@
+<div class="space-y-2">
+    {{if .Rankings}}
+    {{range .Rankings}}
+    <div class="flex items-center justify-between bg-gray-700/50 rounded-lg px-4 py-3 {{if eq .Rank 1}}border-2 border-yellow-500{{else if eq .Rank 2}}border border-gray-500{{else if eq .Rank 3}}border border-amber-700{{end}}">
+        <div class="flex items-center gap-3">
+            <span class="w-8 h-8 flex items-center justify-center rounded-full {{if eq .Rank 1}}bg-yellow-500 text-black{{else if eq .Rank 2}}bg-gray-400 text-black{{else if eq .Rank 3}}bg-amber-700{{else}}bg-gray-600{{end}} font-bold text-sm">
+                {{.Rank}}
+            </span>
+            <span class="font-medium">{{.Nickname}}</span>
+        </div>
+        <span class="text-blue-400 font-bold">{{.Score}} pts</span>
+    </div>
+    {{end}}
+    {{else}}
+    <p class="text-gray-500 text-center py-4">No rankings yet</p>
+    {{end}}
+</div>

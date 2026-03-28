@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playing - Quiz Forge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto" id="play-root" {{if and .PlayerID (eq (str .Session.Status) "active")}}data-boot-timer="{{.Session.TimerSeconds}}"{{end}}>
+            {{if not .PlayerID}}
+            <script>
+                window.location.href = '/join/{{.Code}}';
+            </script>
+            <div class="text-center py-16">
+                <div class="text-5xl mb-4">🔒</div>
+                <h2 class="text-2xl font-bold mb-2">Not Joined</h2>
+                <p class="text-gray-400 mb-6">Redirecting to join page...</p>
+                <a href="/join/{{.Code}}" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-medium">
+                    ← Join Session
+                </a>
+            </div>
+            {{else}}
+            {{template "templates/partials/play_main.html" .}}
+            {{end}}
+        </div>
+    </div>
+
+    <script>
+        var playCode = "{{.Code}}";
+        var hasPlayer = {{if .PlayerID}}true{{else}}false{{end}};
+
+        var hasAnswered = false;
+        var selectedAnswer = null;
+        var timerInterval = null;
+
+        function clearPlayTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        function startTimer(seconds) {
+            clearPlayTimer();
+            var timerEl = document.getElementById('timer');
+            if (!timerEl || !seconds || seconds <= 0) return;
+            var remaining = seconds;
+            timerEl.textContent = remaining;
+            timerInterval = setInterval(function () {
+                remaining--;
+                timerEl.textContent = remaining;
+                if (remaining <= 0) {
+                    clearPlayTimer();
+                    timerEl.textContent = '0';
+                }
+            }, 1000);
+        }
+
+        function wirePlayInteractions() {
+            hasAnswered = false;
+            selectedAnswer = null;
+            var form = document.getElementById('answerForm');
+            if (!form) return;
+
+            form.addEventListener('htmx:beforeSend', function (evt) {
+                if (hasAnswered) {
+                    evt.preventDefault();
+                    return;
+                }
+                var st = document.getElementById('startTime');
+                if (st) st.value = Date.now();
+            });
+
+            form.addEventListener('htmx:afterRequest', function (evt) {
+                if (evt.detail.successful) {
+                    hasAnswered = true;
+                    var answerStatus = document.getElementById('answer-status');
+                    if (answerStatus) {
+                        answerStatus.textContent = '✓ Answer submitted!';
+                        answerStatus.classList.remove('hidden');
+                    }
+                    document.querySelectorAll('.answer-btn').forEach(function (btn) {
+                        btn.disabled = true;
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    });
+                }
+            });
+
+            document.querySelectorAll('.answer-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    if (hasAnswered) return;
+                    selectedAnswer = parseInt(btn.value, 10);
+                    document.querySelectorAll('.answer-btn').forEach(function (b) {
+                        b.classList.remove('bg-blue-600', 'border-blue-500');
+                        b.classList.add('bg-gray-700', 'border-gray-600');
+                    });
+                    btn.classList.remove('bg-gray-700', 'border-gray-600');
+                    btn.classList.add('bg-blue-600', 'border-blue-500');
+                });
+            });
+        }
+
+        function refreshPlayUI() {
+            if (!hasPlayer) return Promise.resolve();
+            return fetch('/api/ui/play/' + playCode)
+                .then(function (r) { if (!r.ok) throw new Error('sync'); return r.json(); })
+                .then(function (data) {
+                    var root = document.getElementById('play-root');
+                    if (root) root.innerHTML = data.main;
+                    htmx.process(root);
+                    wirePlayInteractions();
+                });
+        }
+
+        document.addEventListener('question_start', function (evt) {
+            refreshPlayUI().then(function () {
+                startTimer(evt.detail && evt.detail.timer ? evt.detail.timer : 0);
+            }).catch(function () {});
+        });
+
+        document.addEventListener('question_end', function () {
+            clearPlayTimer();
+            refreshPlayUI().catch(function () {});
+        });
+
+        document.addEventListener('answer_reveal', function () {
+            clearPlayTimer();
+            refreshPlayUI().catch(function () {});
+        });
+
+        document.addEventListener('session_ended', function () {
+            refreshPlayUI().catch(function () {});
+        });
+
+        document.addEventListener('htmx:afterSwap', function (evt) {
+            if (evt.detail.target && evt.detail.target.id === 'answer-status') {
+                evt.detail.target.classList.remove('hidden');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var root = document.getElementById('play-root');
+            if (root && root.dataset.bootTimer) {
+                var s = parseInt(root.dataset.bootTimer, 10);
+                if (!isNaN(s) && s > 0) startTimer(s);
+            }
+        });
+
+        if (hasPlayer) {
+            wirePlayInteractions();
+            (function () {
+                var es = new EventSource('/events/' + playCode);
+                es.onmessage = function (ev) {
+                    try {
+                        var msg = JSON.parse(ev.data);
+                        document.dispatchEvent(new CustomEvent(msg.type, { detail: msg.payload || {} }));
+                    } catch (e) {}
+                };
+            })();
+        }
+    </script>
+</body>
+</html>
