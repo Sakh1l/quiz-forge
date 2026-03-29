@@ -19,6 +19,8 @@ WORKDIR /app
 COPY --from=builder /app/quiz-forge .
 COPY --from=builder /app/static ./static
 
+RUN mkdir -p /var/lib/quiz-forge
+
 EXPOSE 8080
 
 CMD ["./quiz-forge"]

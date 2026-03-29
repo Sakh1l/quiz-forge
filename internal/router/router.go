@@ -1,18 +1,74 @@
 package router
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/quizforge/quiz-forge/internal/config"
 	"github.com/quizforge/quiz-forge/internal/handler"
 	"github.com/quizforge/quiz-forge/internal/middleware"
 	"github.com/quizforge/quiz-forge/internal/repository/memory"
+	"github.com/quizforge/quiz-forge/internal/repository/sqlite"
 	"github.com/quizforge/quiz-forge/internal/sse"
 )
 
+func syncFromSQLite(mem *memory.MemoryStore, sql *sqlite.SQLiteStore) error {
+	quizzes, err := sql.ListQuizzes()
+	if err != nil {
+		return err
+	}
+	for _, q := range quizzes {
+		mem.SaveQuiz(q)
+	}
+
+	sessions, err := sql.ListActiveSessions()
+	if err != nil {
+		return err
+	}
+	for _, s := range sessions {
+		mem.CreateSession(s)
+	}
+	return nil
+}
+
+func syncToSQLiteLoop(mem *memory.MemoryStore, sql *sqlite.SQLiteStore) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		sessions := mem.ListActiveSessions()
+		for _, s := range sessions {
+			sql.UpdateSession(s)
+		}
+
+		quizzes := mem.ListQuizzes()
+		for _, q := range quizzes {
+			sql.SaveQuiz(q)
+		}
+	}
+}
+
 func New(cfg *config.Config) *chi.Mux {
 	store := memory.NewMemoryStore()
+
+	if cfg.IsProduction() {
+		sqliteStore, err := sqlite.NewSQLiteStore(cfg.DatabasePath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to initialize SQLite store: %v, falling back to memory only\n", err)
+		} else {
+			if err := syncFromSQLite(store, sqliteStore); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to sync from SQLite: %v\n", err)
+			}
+			if err := sqliteStore.InitSampleQuiz(); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to initialize sample quiz: %v\n", err)
+			}
+			go syncToSQLiteLoop(store, sqliteStore)
+		}
+	}
+
 	broker := sse.NewBroker()
 
 	r := chi.NewRouter()

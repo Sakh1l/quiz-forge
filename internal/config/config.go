@@ -20,6 +20,7 @@ type Config struct {
 	Host          string
 	LogLevel      string
 	SessionSecret string
+	DatabasePath  string
 
 	Server ServerConfig
 	Quiz   QuizConfig
@@ -62,6 +63,7 @@ func Load() *Config {
 		Host:          getEnv("HOST", "0.0.0.0"),
 		LogLevel:      getEnv("LOG_LEVEL", defaultLogLevel(env)),
 		SessionSecret: getEnv("SESSION_SECRET", generateSessionSecret()),
+		DatabasePath:  getEnv("DATABASE_PATH", defaultDatabasePath(env)),
 		Server: ServerConfig{
 			ReadTimeout:  getEnvInt("SERVER_READ_TIMEOUT", 30),
 			WriteTimeout: getEnvInt("SERVER_WRITE_TIMEOUT", 30),
@@ -108,6 +110,13 @@ func defaultLogLevel(env Environment) string {
 		return "debug"
 	}
 	return "info"
+}
+
+func defaultDatabasePath(env Environment) string {
+	if env == EnvProduction {
+		return "/var/lib/quiz-forge/quiz-forge.db"
+	}
+	return "quiz-forge.db"
 }
 
 func parseOrigins(origins string) []string {

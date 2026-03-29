@@ -9,4 +9,10 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: DATABASE_PATH
+        value: /var/lib/quiz-forge/quiz-forge.db
+    disk:
+      - name: quiz-forge-data
+        mountPath: /var/lib/quiz-forge
+        sizeGB: 1
     autoDeploy: true
