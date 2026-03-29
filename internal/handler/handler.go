@@ -396,13 +396,17 @@ func (h *Handler) JoinPage(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) JoinSession(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
+	log.Printf("[DEBUG] JoinSession: code=%s", code)
+
 	session, err := h.sessionService.GetSession(code)
 	if err != nil || session == nil {
+		log.Printf("[DEBUG] JoinSession: session not found, code=%s", code)
 		http.Redirect(w, r, "/join/"+code+"?error=notfound", http.StatusFound)
 		return
 	}
 
 	nickname := strings.TrimSpace(r.FormValue("nickname"))
+	log.Printf("[DEBUG] JoinSession: nickname=%s, session status=%s", nickname, session.Status)
 	if nickname == "" {
 		http.Redirect(w, r, "/join/"+code+"?error=noname", http.StatusFound)
 		return
@@ -410,9 +414,12 @@ func (h *Handler) JoinSession(w http.ResponseWriter, r *http.Request) {
 
 	session, player, err := h.sessionService.JoinSession(code, nickname)
 	if err != nil {
+		log.Printf("[DEBUG] JoinSession: error joining: %v", err)
 		http.Redirect(w, r, "/join/"+code+"?error="+url.QueryEscape(err.Error()), http.StatusFound)
 		return
 	}
+
+	log.Printf("[DEBUG] JoinSession: player joined, id=%s, nickname=%s, total players=%d", player.ID, player.Nickname, len(session.Players))
 
 	// Broadcast player joined event with nickname
 	h.broker.Broadcast(code, "player_joined", map[string]interface{}{
@@ -424,20 +431,29 @@ func (h *Handler) JoinSession(w http.ResponseWriter, r *http.Request) {
 		Name:  "player_id",
 		Value: player.ID,
 		Path:  "/",
+		// Add SameSite for better cookie handling
+		SameSite: http.SameSiteLaxMode,
 	})
+	log.Printf("[DEBUG] JoinSession: redirecting to /play/%s", code)
 	http.Redirect(w, r, "/play/"+code, http.StatusFound)
 }
 
 func (h *Handler) PlaySession(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
+	log.Printf("[DEBUG] PlaySession: code=%s", code)
+
 	session, err := h.sessionService.GetSession(code)
 	if err != nil || session == nil {
+		log.Printf("[DEBUG] PlaySession: session not found, code=%s", code)
 		http.Redirect(w, r, "/join/"+code+"?error=notfound", http.StatusFound)
 		return
 	}
 
+	log.Printf("[DEBUG] PlaySession: session status=%s, players=%d", session.Status, len(session.Players))
+
 	quiz, err := h.quizService.GetQuiz(session.QuizID)
 	if err != nil || quiz == nil {
+		log.Printf("[DEBUG] PlaySession: quiz not found, quizID=%s", session.QuizID)
 		http.Redirect(w, r, "/join/"+code+"?error=quiznotfound", http.StatusFound)
 		return
 	}
@@ -445,24 +461,39 @@ func (h *Handler) PlaySession(w http.ResponseWriter, r *http.Request) {
 	playerID := ""
 	if cookie, err := r.Cookie("player_id"); err == nil {
 		playerID = cookie.Value
+		log.Printf("[DEBUG] PlaySession: cookie player_id=%s", playerID)
+	} else {
+		log.Printf("[DEBUG] PlaySession: no player_id cookie, err=%v", err)
 	}
 
 	// Check if player exists in session
 	player, exists := session.Players[playerID]
 	if !exists {
+		log.Printf("[DEBUG] PlaySession: player not found in session, playerID=%s, available players=%v", playerID, getPlayerIDs(session.Players))
 		// Player not found, redirect to join
 		http.Redirect(w, r, "/join/"+code, http.StatusFound)
 		return
 	}
 
+	log.Printf("[DEBUG] PlaySession: player found, nickname=%s", player.Nickname)
+
 	data := map[string]interface{}{
-		"Code":    code,
-		"Session": session,
-		"Quiz":    quiz,
-		"Player":  player,
-		"Title":   quiz.Title,
+		"Code":     code,
+		"Session":  session,
+		"Quiz":     quiz,
+		"Player":   player,
+		"PlayerID": playerID,
+		"Title":    quiz.Title,
 	}
 	h.templates.ExecuteTemplate(w, "templates/play/session.html", data)
+}
+
+func getPlayerIDs(players map[string]*models.Player) []string {
+	ids := make([]string, 0, len(players))
+	for id := range players {
+		ids = append(ids, id)
+	}
+	return ids
 }
 
 func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
